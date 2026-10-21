@@ -1,0 +1,353 @@
+# Personal settings over the upstream Web/Desktop bundles.
+- id: ui-workspace
+  config:
+    restoreLastSession: false
+- id: ui-sidebar
+  config:
+    showBrandMark: false
+    brandName: Personal Desktop
+- id: ui-conversation
+  config:
+    heroTitle: 我的电脑助手
+    showHeroBrandMark: false
+- id: ui-brand-official
+  disabled: true
+- id: ui-settings-account
+  disabled: true
+- id: locale
+  config:
+    preference: zh
+- id: agent-default-model
+  config:
+    provider: codex
+    model: gpt-6.1-sol
+    reasoningEffort: low
+- id: subagent-model-selection-settings
+  config:
+    enforceAllowedModels: true
+    enabled: true
+    allowedModels:
+      - provider: gemini-2
+        model: gemini-3.8-flash
+      - provider: gemini-2
+        model: gemini-3.7-flash
+      - provider: gemini-2
+        model: gemini-3.6-flash
+      - provider: gemini-2
+        model: gemini-3.1-pro
+      - provider: gemini
+        model: gemini-3.8-flash
+      - provider: gemini
+        model: gemini-3.7-flash
+      - provider: gemini
+        model: gemini-3.6-flash
+      - provider: gemini
+        model: gemini-3.1-pro
+      - provider: gemini
+        model: gemini-2.5-pro
+      - provider: gemini
+        model: gemini-2.5-flash
+      - provider: gemini
+        model: gemini-2.0-flash
+      - provider: codex
+        model: gpt-6.1-sol
+      - provider: codex
+        model: gpt-6-astra
+      - provider: codex
+        model: gpt-5.6-sol
+      - provider: deepseek-account
+        model: deepseek-flash
+      - provider: deepseek-account
+        model: deepseek-chat
+      - provider: deepseek-account
+        model: deepseek-reasoner
+- id: subagent
+  config:
+    maxActiveSubagents: 8
+    maxNewSubagentsPerTurn: 8
+    enforceLeafSubagents: true
+- id: tool-agent-team
+  disabled: true
+- id: web
+  config:
+    searchProvider: personal-crawlers
+    fetchProvider: personal-crawlers
+- id: web-search-deepseek
+  disabled: true
+- id: skill-filesystem
+  config:
+    customSkillDirs:
+      - D:/desktop/tools/personal-crawlers/skills
+- id: session-title-llm
+  config:
+    provider: deepseek-account
+    model: deepseek-flash
+- id: agent-preset-registry
+  config:
+    default: personal
+- id: product-analytics
+  disabled: true
+- id: desktop-product-telemetry
+  disabled: true
+- id: session-telemetry-otel
+  disabled: true
+- insert:
+    - id: web-crawlers
+      name: '@deepseek-ai/dsh-web-crawlers'
+      config:
+        settingsFile: D:/desktop/personal-data/crawlers/settings.json
+    - id: ui-personal-accounts
+      name: '@deepseek-ai/dsh-client-ui-personal-accounts'
+    - id: ui-personal-workbench
+      name: '@deepseek-ai/dsh-client-ui-personal-workbench'
+    - id: computer-use-windows-mcp
+      name: '@deepseek-ai/dsh-computer-use-windows-mcp'
+    - id: llm-codex
+      name: '@deepseek-ai/dsh-llm-codex'
+      config:
+        providerName: codex
+    - id: llm-gemini
+      name: '@deepseek-ai/dsh-llm-gemini'
+      config:
+        providerName: Google Gemini
+    - id: primary-delegation
+      name: '@deepseek-ai/dsh-primary-delegation'
+      config:
+        primaryOnlyToolPrefixes:
+          - mcp__windows-mcp__
+        allowedTools:
+          - skill
+          - subagent
+          - list_subagent_models
+          - list_agents
+          - send_message
+          - interrupt_agent
+          - job_output
+          - job_list
+          - job_kill
+          - ask_user_question
+          - todo_write
+          - exit_plan_mode
+          - get_goal
+          - create_goal
+          - update_goal
+    - id: subagent-default-model
+      name: '@deepseek-ai/dsh-subagent-default-model'
+      config:
+        provider: gemini-2
+        model: gemini-3.8-flash
+        reasoningEffort: high
+        autoDelegate: true
+    - id: subagent-codex
+      name: '@deepseek-ai/dsh-subagent-codex'
+      config:
+        providerName: codex
+        permissionMode: never
+        model: gpt-6.1-sol
+        reasoningEffort: low
+        agentOptions: true
+    - id: subagent-mimo
+      name: '@deepseek-ai/dsh-subagent-acp'
+      disabled: !!js "!process.env.DSH_PERSONAL_MIMO_EXECUTABLE"
+      config:
+        providerName: mimo
+        command: !!js process.env.DSH_PERSONAL_MIMO_EXECUTABLE
+        args: [ acp ]
+        permission: reject
+
+# Agent preset standard: one `@deepseek-ai/dsh-agent-preset` declaration inserted
+# after the web patch. Edits saved from the Web editor override this row's
+# `config.plugins` by id from the profile patch.
+- insert:
+    - id: preset-personal
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: personal
+        order: 0
+        name: 我的电脑助手
+        description: 本机任务、官方账号协作和结果核验
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              suffix: Your working directory is {{cwd}}.
+              prefix: |
+                You are an agent powered by the user-selected {{model}} model.
+                As the primary agent, own decisions, design direction, task breakdown, synthesis and acceptance judgments. Desktop control is reserved for the primary model. Delegate other execution tasks, including file inspection, code, commands, testing, debugging, retrieval and browser retrieval, through subagent to user-authorized models. Preserve the user's model and reasoning choices. Judge evidence reported by children; never take over their delegated execution when a child fails. As a child agent, execute only the assigned task, report evidence and do not create or delegate to further agents. Never perform desktop automation through tools, terminals, scripts or MCP. All other authorized skills, including project memory, remain available to children.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              customSkillDirs:
+                - D:/desktop/tools/personal-crawlers/skills
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+            config:
+              primaryOnlySkills:
+                - computer-use
+                - desktop-control
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+                config:
+                  auto: true
+                  thresholdRatio: 0.85
+                  headroomTokens: 32768
+                  retainRatio: 0.2
+                  compactionRetries: 2
+                  maxOverflowRetries: 2
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelectionSettings: true
+                  backgroundMode: continuable
+                  modelReasoningEfforts:
+                    - provider: gemini-2
+                      model: gemini-3.8-flash
+                      reasoningEffort: high
+                    - provider: gemini-2
+                      model: gemini-3.1-pro
+                      reasoningEffort: high
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+                  backgroundMode: continuable
+                  modelReasoningEfforts:
+                    - provider: gemini-2
+                      model: gemini-3.8-flash
+                      reasoningEffort: high
+                    - provider: gemini-2
+                      model: gemini-3.1-pro
+                      reasoningEffort: high
+              - id: tool-subagent-codex
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: codex
+                  toolName: subagent_codex
+                  backgroundMode: one-shot
+                  maxDepth: provider-managed
+              - id: tool-subagent-gemini-2
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent_gemini_2
+                  agentOptions:
+                    provider: gemini-2
+                    model: gemini-3.8-flash
+                    reasoningEffort: high
+                  backgroundMode: one-shot
+                  maxDepth: 1
+              - id: tool-subagent-mimo
+                name: '@deepseek-ai/dsh-tool-subagent'
+                disabled: !!js "!process.env.DSH_PERSONAL_MIMO_EXECUTABLE"
+                config:
+                  provider: mimo
+                  toolName: subagent_mimo
+                  backgroundMode: one-shot
+                  maxDepth: provider-managed
+              - id: tool-subagent-claude-code
+                name: '@deepseek-ai/dsh-tool-subagent'
+                disabled: true
+                config:
+                  provider: claude-code
+                  toolName: subagent_claude_code
+                  backgroundMode: one-shot
+                  maxDepth: provider-managed
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+              - id: tool-ralph
+                name: '@deepseek-ai/dsh-tool-ralph'
+                disabled: true
+                config:
+                  subagentProvider: spawn
+                  maxRounds: 64
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: true
